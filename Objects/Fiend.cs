@@ -5,6 +5,6 @@ namespace ExampleMod.Objects
     {
         public string Id { get; set; }
         public string Name { get; set; }
-        public Product Product { get; set; }
+        public Product LastConsumed { get; set; }
     }
 }

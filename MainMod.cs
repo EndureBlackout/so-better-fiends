@@ -5,15 +5,14 @@ using MelonLoader;
 using UnityEngine;
 using ScheduleOne.NPCs;
 using ScheduleOne.NPCs.Behaviour;
-using BOSSFramework.BehaviorTree;
-using BOSSFramework.BehaviorTree.Tasks;
-using BOSSFramework;
 using System.Collections;
 using ScheduleOne.Dialogue;
 using static MelonLoader.MelonLogger;
 using ScheduleOne.Economy;
 using ScheduleOne.Law;
 using MelonLoader.Utils;
+using ExampleMod.Services;
+using ExampleMod.Objects;
 
 [assembly: MelonInfo(typeof(BetterFiends.BetterFiends), BetterFiends.BuildInfo.Name, BetterFiends.BuildInfo.Version, BetterFiends.BuildInfo.Author, BetterFiends.BuildInfo.DownloadLink)]
 [assembly: MelonColor()]
@@ -39,6 +38,9 @@ namespace BetterFiends
         public static UnityEngine.Object test;
         public static GameObject mainCanvasPrefab;
 
+        private string fiendDataPath;
+        public static JsonDataStoreService<Fiend> fiendData;
+
         public static List<NPC> fiendList = new();
 
         public override void OnInitializeMelon()
@@ -50,6 +52,8 @@ namespace BetterFiends
 
                 try
                 {
+                    fiendDataPath = System.IO.Path.Combine(MelonEnvironment.UserDataDirectory, "fiend_data.json");
+                    fiendData = new JsonDataStoreService<Fiend>(fiendDataPath);
                     MelonLogger.Msg("BetterFiends: Patches applied successfully.");
                 }
                 catch (Exception e)

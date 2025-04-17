@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
         <TargetFramework>net48</TargetFramework>
@@ -63,9 +63,6 @@
 		</Reference>
 		<Reference Include="bHapticsLib">
 		  <HintPath>..\..\..\Steam\steamapps\common\Schedule I\MelonLoader\net6\bHapticsLib.dll</HintPath>
-		</Reference>
-		<Reference Include="BOSSFramework">
-		  <HintPath>..\..\..\Steam\steamapps\common\Schedule I\Mods\BOSSFramework.dll</HintPath>
 		</Reference>
 		<Reference Include="Boxophobic.AtmosphericHeightFog.Runtime">
 		  <HintPath>..\..\..\Steam\steamapps\common\Schedule I\Schedule I_Data\Managed\Boxophobic.AtmosphericHeightFog.Runtime.dll</HintPath>

@@ -1,13 +1,18 @@
-﻿using HarmonyLib;
+﻿using BetterFiends.Services;
+using HarmonyLib;
 using MelonLoader;
+using ScheduleOne.DevUtilities;
 using ScheduleOne.Dialogue;
 using ScheduleOne.Economy;
+using ScheduleOne.ItemFramework;
 using ScheduleOne.Law;
 using ScheduleOne.NPCs;
 using ScheduleOne.NPCs.Behaviour;
 using ScheduleOne.PlayerScripts;
+using ScheduleOne.UI.Handover;
 using ScheduleOne.VoiceOver;
 using UnityEngine;
+using static MelonLoader.MelonLogger;
 
 namespace BetterFiends.Patching
 {
@@ -23,16 +28,17 @@ namespace BetterFiends.Patching
             {
                 if (BetterFiends.fiendList.Contains(__instance.Npc))
                 {
-                    MelonLogger.Msg("Setting greeting now");
                     var greetField = AccessTools.Field(typeof(RequestProductBehaviour), "requestGreeting");
                     var greetValue = greetField.GetValue(__instance) as DialogueController.GreetingOverride;
 
+                    var fiend = BetterFiends.fiendData.FindFirst(x => x.Id == __instance.Npc.BakedGUID);
+                    var productName = fiend?.LastConsumed?.Name ?? null;
+
                     if (greetValue != null)
                     {
-                        greetValue.Greeting = "Yo I need more of your shit... NOW!";
+                        greetValue.Greeting = productName != null ? $"Yo I need more of that {productName}... NOW!" : "Yo I need more of your shit... NOW!";
                         greetValue.PlayVO = true;
                         greetValue.VOType = ScheduleOne.VoiceOver.EVOLineType.Alerted;
-                        MelonLogger.Msg("Greeting set");
                     }
                 }
             }
@@ -57,11 +63,7 @@ namespace BetterFiends.Patching
 
                 if (UnityEngine.Random.value < narcRisk)
                 {
-                    npc.PlayVO(EVOLineType.Angry);
-                    npc.dialogueHandler.ShowWorldspaceDialogue(npc.dialogueHandler.Database.GetLine(EDialogueModule.Customer, "sample_offer_rejected_police"), 5f);
-                    npc.actions.SetCallPoliceBehaviourCrime(new AttemptingToSell());
-                    npc.actions.CallPolice_Networked(__instance.TargetPlayer);
-                    npc.SendTextMessage("Better get me that product next time!");
+                    DoNarcBehavior(npc, __instance.TargetPlayer, "Better get me that product next time!");
                 }
                 else
                 {
@@ -69,7 +71,6 @@ namespace BetterFiends.Patching
                     npc.behaviour.CombatBehaviour.Enable_Networked(null);
                 }
 
-                MelonLogger.Msg($"Npc is part of list? {BetterFiends.fiendList.Contains(npc)}");
                 BetterFiends.fiendList.Remove(npc);
             }
         }
@@ -88,15 +89,39 @@ namespace BetterFiends.Patching
 
                 if(UnityEngine.Random.value < narcChance)
                 {
-                    npc.PlayVO(EVOLineType.Angry);
-                    npc.dialogueHandler.ShowWorldspaceDialogue(npc.dialogueHandler.Database.GetLine(EDialogueModule.Customer, "sample_offer_rejected_police"), 5f);
-                    npc.actions.SetCallPoliceBehaviourCrime(new AttemptingToSell());
-                    npc.actions.CallPolice_Networked(__instance.TargetPlayer);
-                    npc.SendTextMessage("No hard feelings man, they said they would pay me!");
+                    DoNarcBehavior(npc, __instance.TargetPlayer, "No hard feelings man, they said I would do hard time!");
                 }
 
                 BetterFiends.fiendList.Remove(npc);
             }
+        }
+
+        [HarmonyPatch("HandoverClosed")]
+        [HarmonyPrefix]
+        public static bool HandoverClosedPrefix(RequestProductBehaviour __instance, HandoverScreen.EHandoverOutcome outcome, List<ItemInstance> items, float askingPrice)
+        {
+            if (BetterFiends.fiendList.Contains(__instance.Npc))
+            {
+                var npc = __instance.Npc;
+                var customer = npc.GetComponent<Customer>();
+
+                var fiend = BetterFiends.fiendData.FindFirst(x => x.Id == npc.BakedGUID);
+
+                if (fiend != null && fiend.LastConsumed != null)
+                {
+                    var product = items.FirstOrDefault(x => x.ID == fiend.LastConsumed.Id);
+
+                    if (product == null)
+                    {
+                        DoCombatBehavior(npc, "This ain't the shit I was looking for!");
+
+                        Singleton<HandoverScreen>.Instance.ClearCustomerSlots(returnToOriginals: true);
+                        return false;
+                    }
+                }
+            }
+
+            return true;
         }
 
         private static float CalculateNarcProbability(Customer customer, NPC npc)
@@ -113,6 +138,28 @@ namespace BetterFiends.Patching
             MelonLogger.Msg($"Narc chance: {narcChance}");
 
             return Mathf.Clamp01(narcChance);
+        }
+
+        private static void DoNarcBehavior(NPC npc, Player player, string message)
+        {
+            npc.PlayVO(EVOLineType.Angry);
+            npc.dialogueHandler.ShowWorldspaceDialogue(npc.dialogueHandler.Database.GetLine(EDialogueModule.Customer, "sample_offer_rejected_police"), 5f);
+            npc.actions.SetCallPoliceBehaviourCrime(new AttemptingToSell());
+            npc.actions.CallPolice_Networked(player);
+
+            var renderer = RenderService.GetWorldspaceDialogueRenderer(npc);
+            renderer.ShowText(message);
+            try { npc.PlayVO(ScheduleOne.VoiceOver.EVOLineType.Acknowledge); } catch { }
+        }
+
+        private static void DoCombatBehavior(NPC npc, string message)
+        {
+            npc.behaviour.CombatBehaviour.SetTarget(null, Player.GetClosestPlayer(npc.transform.position, out var _).NetworkObject);
+            npc.behaviour.CombatBehaviour.Enable_Networked(null);
+
+            var renderer = RenderService.GetWorldspaceDialogueRenderer(npc);
+            renderer.ShowText(message);
+            try { npc.PlayVO(ScheduleOne.VoiceOver.EVOLineType.Acknowledge); } catch { }
         }
     }
 }

@@ -1,7 +1,4 @@
-﻿using BOSSFramework.BehaviorTree.Tasks;
-using BOSSFramework.BehaviorTree;
-using BOSSFramework;
-using MelonLoader;
+﻿using MelonLoader;
 using ScheduleOne.Economy;
 using ScheduleOne.NPCs.Behaviour;
 using ScheduleOne.NPCs;
@@ -26,10 +23,41 @@ namespace BetterFiends.Patching
 
                 if (productValue != null)
                 {
-                    MelonLogger.Msg($"NPC consumed product: {productValue.Definition.Name}");
-
                     Player[] playerArray = UnityEngine.Object.FindObjectsOfType<Player>();
                     var npc = __instance.Npc;
+
+                    var fiendData = BetterFiends.fiendData.FindFirst(x => x.Id == npc.BakedGUID);
+
+                    if (fiendData == null)
+                    {
+                        MelonLogger.Msg("[BetterFiends]: Fiend data not found, creating new fiend data");
+                        fiendData = new ExampleMod.Objects.Fiend()
+                        {
+                            Id = npc.BakedGUID,
+                            Name = npc.name,
+                            LastConsumed = new ExampleMod.Objects.Product
+                            {
+                                Id = productValue.ID,
+                                Name = productValue.Name,
+                                Addictiveness = productValue.GetAddictiveness(),
+                                Quality = (int)productValue.Quality
+                            }
+                        };
+
+                        BetterFiends.fiendData.Add(fiendData);
+                    }
+                    else
+                    {
+                        fiendData.LastConsumed = new ExampleMod.Objects.Product
+                        {
+                            Id = productValue.ID,
+                            Name = productValue.Name,
+                            Addictiveness = productValue.GetAddictiveness(),
+                            Quality = (int)productValue.Quality
+                        };
+
+                        BetterFiends.fiendData.Update(x => x.Id == npc.BakedGUID, y => y.LastConsumed = fiendData.LastConsumed);
+                    }
 
                     foreach (Player player in playerArray)
                     {
@@ -53,14 +81,14 @@ namespace BetterFiends.Patching
             }
             catch (Exception e)
             {
-                MelonLogger.Error($"Error in TryConsume Postfix: {e.Message}");
+                MelonLogger.Error($"[BetterFiends]: Error in TryConsume Postfix: {e.Message}");
             }
         }
 
         private static IEnumerator HandlePlayerInteraction(NPC npc, Player player)
         {
             yield return new WaitForSeconds(90f);
-            BehaviorRegistry.PauseExistingBehaviours(npc);
+            PauseBehaviors(npc);
 
             var enabledProp = HarmonyLib.AccessTools.Property(typeof(RequestProductBehaviour), "Enabled");
             enabledProp.SetValue(npc.behaviour.RequestProductBehaviour, true);
@@ -95,6 +123,24 @@ namespace BetterFiends.Patching
             }
         }
 
+        private static void PauseBehaviors(NPC npc)
+        {
+            var field = HarmonyLib.AccessTools.Field(typeof(NPCBehaviour), "enabledBehaviours");
+            //var existing = npc.behaviour.enabledBehaviours;
+            var existing = field.GetValue(npc.behaviour) as List<ScheduleOne.NPCs.Behaviour.Behaviour>;
+            foreach (var behaviour in existing)
+            {
+                if (behaviour.Active)
+                {
+                    var activeField = HarmonyLib.AccessTools.Property(typeof(ScheduleOne.NPCs.Behaviour.Behaviour), "Active");
+                    activeField.SetValue(behaviour, false);
+                    behaviour.BehaviourUpdate();
+                    if (npc.LocalConnection != null)
+                        behaviour.End_Networked(npc.LocalConnection);
+                }
+            }
+        }
+
         private static float CalculateFiendProbability(float currentAddiction, float productAddictiveness)
         {
             float baseProbability = productAddictiveness;
@@ -103,11 +149,11 @@ namespace BetterFiends.Patching
 
             float combined = baseProbability * (1f + addictionMultiplier);
 
-            float targetDailyProb = 1f / 2f;
+            //float targetDailyProb = 1f / 2f;
 
-            float sigmoidOffset = 5f + Mathf.Log(1f / targetDailyProb - 1f);
+            //float sigmoidOffset = 5f + Mathf.Log(1f / targetDailyProb - 1f);
 
-            float probability = 1f / (1f + Mathf.Exp(-combined + sigmoidOffset));
+            float probability = (1f / (1f + Mathf.Exp(-combined + 3f))) * 0.5f;
 
             return Mathf.Clamp01(probability);
         }
