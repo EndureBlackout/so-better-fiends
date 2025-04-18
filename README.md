@@ -6,7 +6,7 @@ BetterFiends is a mod for Schedule I to improve on the fiending behavior already
 * Since this mod only supports the Mono (alternate branch) version of the game, you must be using the alternate branch.
 * You must have [MelonLoader](https://melonwiki.xyz/#/) installed.
 ## Mono
-Currently there is only a Mono version of this mod (Il2Cpp coming soon). To install, download the dll from the releases page and put it into the "Mods" folder in your game directory.
+Download the zip from the releases page and drag the Mono version to your mods folder.
 
 ## Il2Cpp - (Coming soon)
-This is coming soon.
+Download the zip from the releases page and drag the Il2Cpp version to your mods folder.
