@@ -1,4 +1,4 @@
-﻿using ScheduleOne.NPCs;
+﻿using Il2CppScheduleOne.NPCs;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -40,20 +40,19 @@ namespace BetterFiends.Services
             return null;
         }
 
-        public static ScheduleOne.UI.WorldspaceDialogueRenderer GetWorldspaceDialogueRenderer(NPC npc)
+        public static Il2CppScheduleOne.UI.WorldspaceDialogueRenderer GetWorldspaceDialogueRenderer(NPC npc)
         {
             var spine2 = FindChildRecursive(npc.Avatar.BodyContainer.transform, "mixamorig:Spine2");
             if (spine2 != null)
             {
-                var renderer = spine2.GetComponentInChildren<ScheduleOne.UI.WorldspaceDialogueRenderer>();
+                var renderer = spine2.GetComponentInChildren<Il2CppScheduleOne.UI.WorldspaceDialogueRenderer>();
                 if (renderer != null)
                 {
-                    MelonLoader.MelonLogger.Msg($"[BOSSFramework] Found WorldspaceDialogueRenderer on {npc.name}");
                     return renderer;
                 }
                 else
                 {
-                    MelonLoader.MelonLogger.Warning($"[BOSSFramework] No WorldspaceDialogueRenderer found under Spine2 on {npc.name}");
+                    MelonLoader.MelonLogger.Warning($"No WorldspaceDialogueRenderer found under Spine2 on {npc.name}");
                 }
             }
             return null;

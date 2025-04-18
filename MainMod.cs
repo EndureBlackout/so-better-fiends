@@ -1,18 +1,12 @@
 using HarmonyLib;
-using ScheduleOne.Product;
-using ScheduleOne.PlayerScripts;
 using MelonLoader;
 using UnityEngine;
-using ScheduleOne.NPCs;
-using ScheduleOne.NPCs.Behaviour;
 using System.Collections;
-using ScheduleOne.Dialogue;
 using static MelonLoader.MelonLogger;
-using ScheduleOne.Economy;
-using ScheduleOne.Law;
 using MelonLoader.Utils;
 using ExampleMod.Services;
 using ExampleMod.Objects;
+using Il2CppScheduleOne.NPCs;
 
 [assembly: MelonInfo(typeof(BetterFiends.BetterFiends), BetterFiends.BuildInfo.Name, BetterFiends.BuildInfo.Version, BetterFiends.BuildInfo.Author, BetterFiends.BuildInfo.DownloadLink)]
 [assembly: MelonColor()]

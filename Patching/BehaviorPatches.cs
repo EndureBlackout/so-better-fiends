@@ -1,16 +1,17 @@
 ﻿using BetterFiends.Services;
 using HarmonyLib;
+using Il2CppScheduleOne.DevUtilities;
+using Il2CppScheduleOne.Dialogue;
+using Il2CppScheduleOne.Economy;
+using Il2CppScheduleOne.ItemFramework;
+using Il2CppScheduleOne.Law;
+using Il2CppScheduleOne.NPCs;
+using Il2CppScheduleOne.NPCs.Behaviour;
+using Il2CppScheduleOne.PlayerScripts;
+using Il2CppScheduleOne.UI.Handover;
+using Il2CppScheduleOne.VoiceOver;
 using MelonLoader;
-using ScheduleOne.DevUtilities;
-using ScheduleOne.Dialogue;
-using ScheduleOne.Economy;
-using ScheduleOne.ItemFramework;
-using ScheduleOne.Law;
-using ScheduleOne.NPCs;
-using ScheduleOne.NPCs.Behaviour;
-using ScheduleOne.PlayerScripts;
-using ScheduleOne.UI.Handover;
-using ScheduleOne.VoiceOver;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 using static MelonLoader.MelonLogger;
 
@@ -28,17 +29,18 @@ namespace BetterFiends.Patching
             {
                 if (BetterFiends.fiendList.Contains(__instance.Npc))
                 {
-                    var greetField = AccessTools.Field(typeof(RequestProductBehaviour), "requestGreeting");
-                    var greetValue = greetField.GetValue(__instance) as DialogueController.GreetingOverride;
+                    //var greetField = AccessTools.Field(typeof(RequestProductBehaviour), "requestGreeting");
+                    //var greetValue = greetField.GetValue(__instance) as DialogueController.GreetingOverride;
+                    var greeting = __instance.requestGreeting;
 
                     var fiend = BetterFiends.fiendData.FindFirst(x => x.Id == __instance.Npc.BakedGUID);
                     var productName = fiend?.LastConsumed?.Name ?? null;
 
-                    if (greetValue != null)
+                    if (greeting != null)
                     {
-                        greetValue.Greeting = productName != null ? $"Yo I need more of that {productName}... NOW!" : "Yo I need more of your shit... NOW!";
-                        greetValue.PlayVO = true;
-                        greetValue.VOType = ScheduleOne.VoiceOver.EVOLineType.Alerted;
+                        greeting.Greeting = productName != null ? $"Yo I need more of that {productName}... NOW!" : "Yo I need more of your shit... NOW!";
+                        greeting.PlayVO = true;
+                        greeting.VOType = Il2CppScheduleOne.VoiceOver.EVOLineType.Alerted;
                     }
                 }
             }
@@ -98,7 +100,7 @@ namespace BetterFiends.Patching
 
         [HarmonyPatch("HandoverClosed")]
         [HarmonyPrefix]
-        public static bool HandoverClosedPrefix(RequestProductBehaviour __instance, HandoverScreen.EHandoverOutcome outcome, List<ItemInstance> items, float askingPrice)
+        public static bool HandoverClosedPrefix(RequestProductBehaviour __instance, HandoverScreen.EHandoverOutcome outcome, Il2CppSystem.Collections.Generic.List<ItemInstance> items, float askingPrice)
         {
             if (BetterFiends.fiendList.Contains(__instance.Npc))
             {
@@ -109,7 +111,15 @@ namespace BetterFiends.Patching
 
                 if (fiend != null && fiend.LastConsumed != null)
                 {
-                    var product = items.FirstOrDefault(x => x.ID == fiend.LastConsumed.Id);
+                    ItemInstance product = null;
+
+                    foreach(var item in items)
+                    {
+                        if(item.ID == fiend.LastConsumed.Id)
+                        {
+                            product = item;
+                        }
+                    }
 
                     if (product == null)
                     {
@@ -149,7 +159,7 @@ namespace BetterFiends.Patching
 
             var renderer = RenderService.GetWorldspaceDialogueRenderer(npc);
             renderer.ShowText(message);
-            try { npc.PlayVO(ScheduleOne.VoiceOver.EVOLineType.Acknowledge); } catch { }
+            try { npc.PlayVO(Il2CppScheduleOne.VoiceOver.EVOLineType.Acknowledge); } catch { }
         }
 
         private static void DoCombatBehavior(NPC npc, string message)
@@ -159,7 +169,7 @@ namespace BetterFiends.Patching
 
             var renderer = RenderService.GetWorldspaceDialogueRenderer(npc);
             renderer.ShowText(message);
-            try { npc.PlayVO(ScheduleOne.VoiceOver.EVOLineType.Acknowledge); } catch { }
+            try { npc.PlayVO(Il2CppScheduleOne.VoiceOver.EVOLineType.Acknowledge); } catch { }
         }
     }
 }

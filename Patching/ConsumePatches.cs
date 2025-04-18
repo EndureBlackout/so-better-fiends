@@ -1,13 +1,13 @@
 ﻿using MelonLoader;
-using ScheduleOne.Economy;
-using ScheduleOne.NPCs.Behaviour;
-using ScheduleOne.NPCs;
-using ScheduleOne.Product;
-using System.Collections;
+using Il2CppScheduleOne.Economy;
+using Il2CppScheduleOne.NPCs.Behaviour;
+using Il2CppScheduleOne.NPCs;
+using Il2CppScheduleOne.Product;
 using UnityEngine;
-using ScheduleOne.PlayerScripts;
+using Il2CppScheduleOne.PlayerScripts;
 using HarmonyLib;
-using ScheduleOne.ItemFramework;
+using Il2CppSystem;
+using System.Collections;
 
 namespace BetterFiends.Patching
 {
@@ -18,10 +18,11 @@ namespace BetterFiends.Patching
         {
             try
             {
-                var productFieldInfo = AccessTools.Field(typeof(ConsumeProductBehaviour), "product");
-                var productValue = productFieldInfo.GetValue(__instance) as ProductItemInstance;
+                //var productFieldInfo = AccessTools.Field(typeof(ConsumeProductBehaviour), "product");
+                //var productValue = productFieldInfo.GetValue(__instance) as ProductItemInstance;
+                var product = __instance.product;
 
-                if (productValue != null)
+                if (product != null)
                 {
                     Player[] playerArray = UnityEngine.Object.FindObjectsOfType<Player>();
                     var npc = __instance.Npc;
@@ -37,10 +38,10 @@ namespace BetterFiends.Patching
                             Name = npc.name,
                             LastConsumed = new ExampleMod.Objects.Product
                             {
-                                Id = productValue.ID,
-                                Name = productValue.Name,
-                                Addictiveness = productValue.GetAddictiveness(),
-                                Quality = (int)productValue.Quality
+                                Id = product.ID,
+                                Name = product.Name,
+                                Addictiveness = product.GetAddictiveness(),
+                                Quality = (int)product.Quality
                             }
                         };
 
@@ -50,10 +51,10 @@ namespace BetterFiends.Patching
                     {
                         fiendData.LastConsumed = new ExampleMod.Objects.Product
                         {
-                            Id = productValue.ID,
-                            Name = productValue.Name,
-                            Addictiveness = productValue.GetAddictiveness(),
-                            Quality = (int)productValue.Quality
+                            Id = product.ID,
+                            Name = product.Name,
+                            Addictiveness = product.GetAddictiveness(),
+                            Quality = (int)product.Quality
                         };
 
                         BetterFiends.fiendData.Update(x => x.Id == npc.BakedGUID, y => y.LastConsumed = fiendData.LastConsumed);
@@ -65,7 +66,7 @@ namespace BetterFiends.Patching
                         {
                             var customer = npc.GetComponent<Customer>();
                             var currentAddiction = customer.CurrentAddiction;
-                            var productAddictiveness = productValue.GetAddictiveness();
+                            var productAddictiveness = product.GetAddictiveness();
                             var fiendChance = CalculateFiendProbability(currentAddiction, productAddictiveness);
                             MelonLogger.Msg($"[BetterFiends]: {npc.name} has a {fiendChance} chance to fiend for more product.");
 
@@ -79,7 +80,7 @@ namespace BetterFiends.Patching
 
                 }
             }
-            catch (Exception e)
+            catch (System.Exception e)
             {
                 MelonLogger.Error($"[BetterFiends]: Error in TryConsume Postfix: {e.Message}");
             }
@@ -90,24 +91,31 @@ namespace BetterFiends.Patching
             yield return new WaitForSeconds(90f);
             PauseBehaviors(npc);
 
-            var enabledProp = HarmonyLib.AccessTools.Property(typeof(RequestProductBehaviour), "Enabled");
-            enabledProp.SetValue(npc.behaviour.RequestProductBehaviour, true);
+            //var enabledProp = HarmonyLib.AccessTools.Property(typeof(RequestProductBehaviour), "Enabled");
+            //enabledProp.SetValue(npc.behaviour.RequestProductBehaviour, true);
+            npc.behaviour.RequestProductBehaviour.Enabled = true;
             npc.behaviour.RequestProductBehaviour.SendEnable();
 
-            var targetProp = HarmonyLib.AccessTools.Property(typeof(RequestProductBehaviour), "TargetPlayer");
-            targetProp.SetValue(npc.behaviour.RequestProductBehaviour, player);
+            //var targetProp = HarmonyLib.AccessTools.Property(typeof(RequestProductBehaviour), "TargetPlayer");
+            //targetProp.SetValue(npc.behaviour.RequestProductBehaviour, player);
+            npc.behaviour.RequestProductBehaviour.TargetPlayer = player;
 
-            var addEnabled = HarmonyLib.AccessTools.Method(typeof(NPCBehaviour), "AddEnabledBehaviour");
-            addEnabled.Invoke(npc.behaviour, new object[] { npc.behaviour.RequestProductBehaviour });
+            //var addEnabled = HarmonyLib.AccessTools.Method(typeof(NPCBehaviour), "AddEnabledBehaviour");
+            //addEnabled.Invoke(npc.behaviour, new object[] { npc.behaviour.RequestProductBehaviour });
+            npc.behaviour.AddEnabledBehaviour(npc.behaviour.RequestProductBehaviour);
 
-            var field = HarmonyLib.AccessTools.Field(typeof(NPCBehaviour), "enabledBehaviours");
-            var existing = field.GetValue(npc.behaviour) as List<ScheduleOne.NPCs.Behaviour.Behaviour>;
+            //var field = HarmonyLib.AccessTools.Field(typeof(NPCBehaviour), "enabledBehaviours");
+            //var existing = field.GetValue(npc.behaviour) as List<Il2CppScheduleOne.NPCs.Behaviour.Behaviour>;
+            Il2CppSystem.Collections.Generic.List<Il2CppScheduleOne.NPCs.Behaviour.Behaviour> existing = npc.behaviour.enabledBehaviours;
+
             foreach (var behaviour in existing)
             {
                 if (!behaviour.Active)
                 {
-                    var activeField = HarmonyLib.AccessTools.Property(typeof(ScheduleOne.NPCs.Behaviour.Behaviour), "Active");
-                    activeField.SetValue(behaviour, true);
+                    //var activeField = HarmonyLib.AccessTools.Property(typeof(Il2CppScheduleOne.NPCs.Behaviour.Behaviour), "Active");
+                    //activeField.SetValue(behaviour, true);
+                    behaviour.Active = true;
+
                     if (npc.LocalConnection != null)
                     {
                         behaviour.Enable_Networked(npc.LocalConnection);
@@ -119,21 +127,28 @@ namespace BetterFiends.Patching
 
             if (existing.Count > 0)
             {
-                npc.behaviour.activeBehaviour = existing.Where(x => x is RequestProductBehaviour).First();
+                foreach (var beh in existing)
+                {
+                    if(beh is RequestProductBehaviour)
+                    {
+                        npc.behaviour.activeBehaviour = beh;
+                    }
+                }
             }
         }
 
         private static void PauseBehaviors(NPC npc)
         {
-            var field = HarmonyLib.AccessTools.Field(typeof(NPCBehaviour), "enabledBehaviours");
-            //var existing = npc.behaviour.enabledBehaviours;
-            var existing = field.GetValue(npc.behaviour) as List<ScheduleOne.NPCs.Behaviour.Behaviour>;
+            //var field = HarmonyLib.AccessTools.Field(typeof(NPCBehaviour), "enabledBehaviours");
+            //var existing = field.GetValue(npc.behaviour) as List<Il2CppScheduleOne.NPCs.Behaviour.Behaviour>;
+            var existing = npc.behaviour.enabledBehaviours;
             foreach (var behaviour in existing)
             {
                 if (behaviour.Active)
                 {
-                    var activeField = HarmonyLib.AccessTools.Property(typeof(ScheduleOne.NPCs.Behaviour.Behaviour), "Active");
-                    activeField.SetValue(behaviour, false);
+                    //var activeField = HarmonyLib.AccessTools.Property(typeof(Il2CppScheduleOne.NPCs.Behaviour.Behaviour), "Active");
+                    //activeField.SetValue(behaviour, false);
+                    behaviour.Active = false;
                     behaviour.BehaviourUpdate();
                     if (npc.LocalConnection != null)
                         behaviour.End_Networked(npc.LocalConnection);
