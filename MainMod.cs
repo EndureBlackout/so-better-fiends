@@ -70,7 +70,7 @@ namespace BetterFiends
 
         private void LoadConfig()
         {
-            configPath = Path.Combine(MelonEnvironment.UserDataDirectory, "config.json");
+            configPath = Path.Combine(MelonEnvironment.UserDataDirectory, "better-fiends-config.json");
 
             if (File.Exists(configPath))
             {
